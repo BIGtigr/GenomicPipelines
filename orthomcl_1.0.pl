@@ -4,7 +4,7 @@ About this script:
     Author  : bigtigerzou@163.com
     Dependencies : orthMCL, BLAST+, MYSQL, MCL.
     This script is used for lazyly running orthomcl. To use it, DIGS-tool(https://github.com/giffordlabcvr/DIGS-tool)
-    should be properly installed first. it comprise a lots of useful modules, part of whlch were used here.
+    should be properly installed first. it comprise a lots of useful modules, part of which were used here.
     Before initialise your analysis, please set the following 4 environment variables:\$DIGS_HOME,\$DIGS_MYSQL_USER and \$DIGS_MYSQL_PASSWORD.
     Following is what i "echoed" in my ~/.bashrc file:
 		export DIGS_MYSQL_USER=tigerzou
