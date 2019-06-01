@@ -1,3 +1,6 @@
+# Zhang, J., and S. Kumar (1997) Detection of convergent and parallel evolution at the amino 
+# acid sequence level. Mol Biol Evol 14: 527-536
+
 import sys
 from decimal import Decimal
 import numpy as np
@@ -9,11 +12,11 @@ parser.add_option('--rate', help=('path to 03_rate file'))
 
 (options, args) = parser.parse_args()
 usage = u'''`Usage:python %prog [options...] [result] [path]'''
-#from scipy.misc import factorial
-#m = 124#seq length
-#Nc = 1 #observed number of convergent-change sites 
-#mfc = 0.039 #The probability that a site is a convergent-change site (fc) is the sum of probability of occurrence of all site configurations satisfying the condition
-# Zhang, J., and S. Kumar (1997) Detection of convergent and parallel evolution at the amino acid sequence level. Mol Biol Evol 14: 527-536
+# from scipy.misc import factorial
+# m = 124#seq length
+# Nc = 1 #observed number of convergent-change sites 
+# mfc = 0.039 #The probability that a site is a convergent-change site (fc) is the sum of 
+# probability of occurrence of all site configurations satisfying the condition
 ########################################################
 numOpts = len(sys.argv)
 if numOpts < 2:
