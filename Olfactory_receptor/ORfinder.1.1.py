@@ -1,6 +1,6 @@
 ##########################################################################################
 #About this script: 
-#	Version : 20180330/001
+#	Version : 20190604/001
 #	Author  : Dahu Zou
 #	Description : this script is used to find olfactory receptor genes in genomes
 ##########################################################################################
