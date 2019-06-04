@@ -95,7 +95,7 @@ def fasta2dict(fFile):
 ##############################################################################
 # parsing blast result
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def blast_parser(tab,seq_len):
+def blast_parser(tab, seq_len, add=90):
 	dicta = {}
 	with open(tab) as TAB:
 		for line in TAB:
@@ -104,8 +104,8 @@ def blast_parser(tab,seq_len):
 			start = int(lines[8])
 			end = int(lines[9])
 			coordinate = max(start, end)-abs(start - end)/2
-			extend_length1 = int(lines[6]) * 3 + 30
-			extend_length2 = (seq_len[lines[0]] - int(lines[7])) * 3 + 30
+			extend_length1 = int(lines[6]) * 3 + add
+			extend_length2 = (seq_len[lines[0]] - int(lines[7])) * 3 + add
 			#extend_length = 3*seq_len[lines[0]] - 3*(int(lines[7]) - int(lines[6]) + 1)+30
 			if lines[1] in dicta:
 				if lines[8] < lines[9]:
