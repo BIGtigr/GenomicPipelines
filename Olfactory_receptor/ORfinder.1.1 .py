@@ -12,7 +12,6 @@ parser = OptionParser()
 parser.add_option('--path', help=('absolute path to genome sequence file'))
 parser.add_option('--query', help=('amino acid sequence'))
 parser.add_option('--cpu', type='int', default=30,help='numbers of threads')
-parser.add_option('--direction', type='int', default=0,help='0: both, 1: positive, 2:negtive')
 usage = u'''`Usage:python %prog [options...] [path] [query] [cpu]'''
 (options, args) = parser.parse_args()
 
