@@ -10,7 +10,7 @@ About this script:
 		export DIGS_MYSQL_USER=tigerzou
 		export DIGS_MYSQL_PASSWORD=123456
 		export DIGS_HOME=/home/zdh/Software/DIGS-tool
-    Any problem please contact bigtigerzou\@163.com and you will not be answered.
+    Any problem please contact bigtigerzou\@163.com.
 Usage:
     perl $0 -p=<path to pep files>
 USAGE
@@ -110,8 +110,10 @@ print OUT "Description\tID";
 foreach (@taxon) {
 	print OUT "\t$_";
 }
-print "\n";
+print OUT "\n";
 foreach my $group_ID (@group_ID) {
+	$num = 0;
+	$number = 0;
 	$out = '';
 	$out .= "NA\t$group_ID";
 	foreach (@taxon) {
