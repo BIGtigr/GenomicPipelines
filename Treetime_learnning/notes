@@ -1,0 +1,211 @@
+treetime
+
+treetime 为主程序，主要用于解析参数，设置子命令（tt,homoplasy等），在最后通过以下代码执行命令：
+if py2:
+        parser.set_default_subparser('tt')
+    params = parser.parse_args()
+    return_code = params.func(params)
+sys.exit(return_code)
+
+wraper.py为二级代码块，主要包含了treetime,homoplasy等子命令的核心代码，以及一些工具性的函数；
+其他则为以一些专用特殊功能的模块，如gtr.py, nuc_models.py
+ 
+主程序treetime，主要用于处理参数。
+line 210 调用wraper.py 中的timetree函数(line 461). 
+timetree 函数(line 484)调用自身函数create_gtr(line 36):
+gtr = create_gtr(params)
+
+
+def create_gtr(params):#wraper.py line 36
+    """
+    parse the arguments referring to the GTR model and return a GTR structure
+    """
+    model = params.gtr
+    gtr_params = params.gtr_params
+    if model == 'infer':
+        gtr = GTR.standard('jc', alphabet='aa' if params.aa else 'nuc')
+    else:
+        try:
+            kwargs = {}
+            if gtr_params is not None:
+                for param in gtr_params:
+                    keyval = param.split('=')
+                    if len(keyval)!=2: continue
+                    if keyval[0] in ['pis', 'pi', 'Pi', 'Pis']:
+                        keyval[0] = 'pi'
+                        keyval[1] = list(map(float, keyval[1].split(',')))
+                    elif keyval[0] not in ['alphabet']:
+                        keyval[1] = float(keyval[1])
+                    kwargs[keyval[0]] = keyval[1]
+            else:
+                print ("GTR params are not specified. Creating GTR model with default parameters")
+
+            gtr = GTR.standard(model, **kwargs)
+            infer_gtr = False
+        except:
+            print ("Could not create GTR model from input arguments. Using default (Jukes-Cantor 1969)")
+            gtr = GTR.standard('jc', alphabet='aa' if params.aa else 'nuc')
+            infer_gtr = False
+    return gtr
+
+    @staticmethod
+    def standard(model, **kwargs): #gtr.py line 229
+        from .nuc_models import JC69, K80, F81, HKY85, T92, TN93
+        from .aa_models  import JTT92
+
+        if model.lower() in ['jc', 'jc69', 'jukes-cantor', 'jukes-cantor69', 'jukescantor', 'jukescantor69']:
+            return JC69(**kwargs)
+        elif model.lower() in ['k80', 'kimura80', 'kimura1980']:
+            return K80(**kwargs)
+        elif model.lower() in ['f81', 'felsenstein81', 'felsenstein1981']:
+            return F81(**kwargs)
+        elif model.lower() in ['hky', 'hky85', 'hky1985']:
+            return HKY85(**kwargs)
+        elif model.lower() in ['t92', 'tamura92', 'tamura1992']:
+            return T92(**kwargs)
+        elif model.lower() in ['tn93', 'tamura_nei_93', 'tamuranei93']:
+            return TN93(**kwargs)
+        elif model.lower() in ['jtt', 'jtt92']:
+            return JTT92(**kwargs)
+        else:
+            raise KeyError("The GTR model '{}' is not in the list of available models."
+                "".format(model))
+
+
+根据参数，调用nuc_models.py中的各种模型line 353-366。例如JC69:
+def JC69 (mu=1.0, alphabet="nuc", **kwargs): #nuc_models.py line 8
+    """
+    Jukes-Cantor 1969 model. This model assumes equal concentrations
+    of the nucleotides and equal transition rates between nucleotide states.
+    For more info, see: Jukes and Cantor (1969). Evolution of Protein Molecules.
+                        New York: Academic Press. pp. 21–132
+    Parameters
+    -----------
+     mu : float
+        substitution rate
+     alphabet : str
+        specify alphabet to use.
+        Available alphabets are:
+         'nuc' - nucleotides only, gaps ignored
+         'nuc_gap' - nucleotide alphabet with gaps, gaps can be ignored optionally
+    """
+    num_chars = len(alphabets[alphabet])
+    W, pi = np.ones((num_chars,num_chars)), np.ones(num_chars)
+    gtr = GTR(alphabet=alphabet)
+    gtr.assign_rates(mu=mu, pi=pi, W=W)
+    return gtr
+
+    def __init__(self, alphabet='nuc', prof_map=None, logger=None): #gtr.py line 13
+        self.debug=False
+        if isinstance(alphabet, str):
+            if alphabet not in alphabet_synonyms:
+                raise AttributeError("Unknown alphabet type specified")
+            else:
+                tmp_alphabet = alphabet_synonyms[alphabet]
+                self.alphabet = alphabets[tmp_alphabet]
+                self.profile_map = profile_maps[tmp_alphabet]
+        else:
+            # not a predefine alphabet
+            self.alphabet = alphabet
+            if prof_map is None: # generate trivial unambiguous profile map is none is given
+                self.profile_map = {s:x for s,x in zip(self.alphabet, np.eye(len(self.alphabet)))}
+            else:
+                self.profile_map = prof_map
+
+
+        if logger is None:
+            def logger_default(*args,**kwargs):
+                """standard logging function if none provided"""
+                if self.debug:
+                    print(*args)
+            self.logger = logger_default
+        else:
+            self.logger = logger
+
+        self.ambiguous = None
+        self.gap_index = None
+        self.n_states = len(self.alphabet)
+        self.assign_gap_and_ambiguous()
+
+        # NEEDED TO BREAK RATE MATRIX DEGENERACY AND FORCE NP TO RETURN REAL ORTHONORMAL EIGENVECTORS
+        # ugly hack, but works and shouldn't affect results
+        tmp_rng_state = np.random.get_state()
+        np.random.seed(12345)
+        self.break_degen = np.random.random(size=(self.n_states, self.n_states))*1e-6
+        np.random.set_state(tmp_rng_state)
+
+        # init all matrices with dummy values
+        self.logger("GTR: init with dummy values!", 3)
+        self.v = None # right eigenvectors
+        self.v_inv = None # left eigenvectors
+        self.eigenvals =None # eigenvalues
+        self.assign_rates()
+
+
+    def assign_rates(self, mu=1.0, pi=None, W=None): #gtr.py(line 149)
+    	n = len(self.alphabet)
+        self.mu = mu
+
+        if pi is not None and len(pi)==n:
+            Pi = np.array(pi)
+        else:
+            if pi is not None and len(pi)!=n:
+                self.logger("length of equilibrium frequency vector does not match alphabet length", 4, warn=True)
+                self.logger("Ignoring input equilibrium frequencies", 4, warn=True)
+            Pi = np.ones(shape=(n,))
+
+        self.Pi = Pi/np.sum(Pi)
+
+        if W is None or W.shape!=(n,n):
+            if (W is not None) and W.shape!=(n,n):
+                self.logger("Substitution matrix size does not match alphabet size", 4, warn=True)
+                self.logger("Ignoring input substitution matrix", 4, warn=True)
+            # flow matrix
+            W = np.ones((n,n))
+            np.fill_diagonal(W, 0.0)
+            np.fill_diagonal(W, - W.sum(axis=0))
+        else:
+            W=np.array(W)
+
+        self.W = 0.5*(W+W.T)
+        self._check_fix_Q(fixed_mu=True) #对参数进行了矫正
+        self._eig() #生成了两个参数
+
+	
+	
+	def _check_fix_Q(self, fixed_mu=False): #gtr.py line 496
+        """
+        Check the main diagonal of Q and fix it in case it does not corresond
+        the definition of the rate matrix. Should be run every time when creating
+        custom GTR model.
+        """
+        # fix Q
+        self.Pi /= self.Pi.sum() # correct the Pi manually
+        # NEEDED TO BREAK RATE MATRIX DEGENERACY AND FORCE NP TO RETURN REAL ORTHONORMAL EIGENVECTORS
+        self.W += self.break_degen + self.break_degen.T
+        # fix W
+        np.fill_diagonal(self.W, 0)
+        Wdiag = -(self.Q).sum(axis=0)/self.Pi
+        np.fill_diagonal(self.W, Wdiag)
+        scale_factor = -np.sum(np.diagonal(self.Q)*self.Pi)
+        self.W /= scale_factor
+        if not fixed_mu:
+            self.mu *= scale_factor
+        if (self.Q.sum(axis=0) < 1e-10).sum() <  self.alphabet.shape[0]: # fix failed
+            print ("Cannot fix the diagonal of the GTR rate matrix. Should be all zero", self.Q.sum(axis=0))
+            import ipdb; ipdb.set_trace()
+            raise ArithmeticError("Cannot fix the diagonal of the GTR rate matrix.")
+
+	def _eig(self): #gtr.py line 520
+        """
+        Perform eigendecompositon of the rate matrix and stores the left- and right-
+        matrices to convert the sequence profiles to the GTR matrix eigenspace
+        and hence to speed-up the computations.
+        """
+        # eigendecomposition of the rate matrix
+        eigvals, eigvecs = np.linalg.eig(self.Q)
+        self.v = np.real(eigvecs)
+        self.v_inv = np.linalg.inv(self.v)
+        self.eigenvals = np.real(eigvals)
+
+
