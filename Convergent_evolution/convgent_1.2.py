@@ -78,7 +78,7 @@ else:
 			sh.write('prank -d=%s -o=%s -termgap -protein +F\n' %(fasfile, basename))
 	sh.close()
 	prankCMD = 'ParaFly -c prank.sh -CPU %s' %options.cpu
-	#os.system(prankCMD)
+	os.system(prankCMD)
 	prank_path = os.getcwd()
 	
 	os.chdir('../')
